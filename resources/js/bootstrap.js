@@ -1,0 +1,41 @@
+import axios from 'axios';
+
+// Set base URL for API requests
+axios.defaults.baseURL = 'http://127.0.0.1:8000';
+
+// Enable credentials (cookies) to be sent with requests
+axios.defaults.withCredentials = true;
+
+// Set default headers
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+axios.defaults.headers.common['Accept'] = 'application/json';
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+// Add request interceptor to include auth token
+axios.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Add response interceptor to handle 401 errors
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Redirect to login if unauthorized
+            localStorage.removeItem('auth_token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+export default axios;
