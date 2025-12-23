@@ -1,5 +1,4 @@
-// ==================== PageList.jsx ====================
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Pages.css';
@@ -8,7 +7,8 @@ function PageList() {
     const [pages, setPages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [search, setSearch] = useState('');
+
+    const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
     useEffect(() => {
         fetchPages();
@@ -16,9 +16,20 @@ function PageList() {
 
     const fetchPages = async () => {
         try {
-            const response = await axios.get('http://127.0.0.1:8000/api/pages');
+            setLoading(true);
+            const token = localStorage.getItem('auth_token');
+            const response = await axios.get(`${API_BASE_URL}/pages`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            console.log('Fetched pages:', response.data);
+
             if (response.data.success) {
-                setPages(response.data.data);
+                setPages(response.data.data || []);
+            } else if (Array.isArray(response.data)) {
+                setPages(response.data);
+            } else {
+                setPages([]);
             }
         } catch (error) {
             console.error('Error fetching pages:', error);
@@ -28,36 +39,86 @@ function PageList() {
         }
     };
 
-    const toggleActive = async (id, currentStatus) => {
+    const handleToggleStatus = async (id, currentStatus) => {
         try {
-            const response = await axios.put(
-                `http://127.0.0.1:8000/api/pages/${id}`,
-                { is_active: !currentStatus }
-            );
-            if (response.data.success) {
-                fetchPages();
+            const token = localStorage.getItem('auth_token');
+            const newStatus = currentStatus === 1 ? 0 : 1;
+
+            console.log('Toggling status for page:', id, 'from', currentStatus, 'to', newStatus);
+
+            let response;
+            try {
+                response = await axios.patch(
+                    `${API_BASE_URL}/pages/${id}/status`,
+                    { status: newStatus },
+                    {
+                        headers: { 
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+            } catch (err1) {
+                console.log('Method 1 failed, trying PUT method...');
+                response = await axios.put(
+                    `${API_BASE_URL}/pages/${id}`,
+                    { is_active: newStatus },
+                    {
+                        headers: { 
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
             }
+
+            console.log('Status update response:', response.data);
+
+            setPages(pages.map(page =>
+                page.id === id ? { ...page, is_active: newStatus } : page
+            ));
+
+            console.log('Status updated successfully');
         } catch (error) {
-            console.error('Error updating page status:', error);
-            alert('Failed to update page status');
+            console.error('Error toggling status:', error);
+            console.error('Error response:', error.response?.data);
+            alert('Failed to update status. Please check console for details.');
         }
     };
 
-    const filteredPages = pages.filter(page =>
-        page.title.toLowerCase().includes(search.toLowerCase()) ||
-        page.slug.toLowerCase().includes(search.toLowerCase())
-    );
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this page?')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('auth_token');
+            await axios.delete(`${API_BASE_URL}/pages/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setPages(pages.filter(page => page.id !== id));
+            alert('Page deleted successfully');
+        } catch (error) {
+            console.error('Error deleting page:', error);
+            alert(error.response?.data?.message || 'Failed to delete page');
+        }
+    };
 
     if (loading) {
-        return <div className="loading">Loading pages...</div>;
+        return (
+            <div className="pages-container">
+                <div className="loading">Loading pages...</div>
+            </div>
+        );
     }
 
     return (
-        <div className="page-list-container">
+        <div className="pages-container">
             <div className="page-header">
                 <h1>Pages</h1>
-                <Link to="/staff/pages/new" className="btn-new">
-                    + New
+                <Link to="/staff/pages/create" className="btn-new">
+                    + New Page
                 </Link>
             </div>
 
@@ -67,76 +128,51 @@ function PageList() {
                 </div>
             )}
 
-            <div className="table-controls">
-                <div className="show-entries">
-                    <label>
-                        Show <select defaultValue="10">
-                            <option value="10">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select> entries
-                    </label>
-                </div>
-                <div className="search-box">
-                    <label>
-                        Search:
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search pages..."
-                        />
-                    </label>
-                </div>
-            </div>
-
-            <div className="table-wrapper">
-                <table className="pages-table">
+            <div className="table-container">
+                <table className="data-table">
                     <thead>
                         <tr>
                             <th>#</th>
                             <th>Name</th>
-                            <th>Url</th>
-                            <th>Route Name</th>
-                            <th>Action</th>
+                            <th>URL</th>
+                            <th>Location</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredPages.length === 0 ? (
+                        {pages.length === 0 ? (
                             <tr>
                                 <td colSpan="5" className="no-data">
-                                    No pages found
+                                    No pages found. Click "New Page" to create one.
                                 </td>
                             </tr>
                         ) : (
-                            filteredPages.map((page, index) => (
+                            pages.map((page, index) => (
                                 <tr key={page.id}>
                                     <td>{index + 1}</td>
-                                    <td>{page.title}</td>
-                                    <td>{page.slug}</td>
-                                    <td>{page.route_name}</td>
-                                    <td>
+                                    <td>{page.page_title}</td>
+                                    <td>{page.slug || '/'}</td>
+                                    <td>{page.location || '-'}</td>
+                                    <td className="actions-cell">
                                         <div className="action-buttons">
+                                            {/* Toggle Switch */}
+                                            <label className="toggle-switch">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={page.is_active === 1}
+                                                    onChange={() => handleToggleStatus(page.id, page.is_active)}
+                                                />
+                                                <span className="toggle-slider"></span>
+                                            </label>
+
+                                            {/* Edit Button */}
                                             <Link
-                                                to={`/staff/pages/edit/${page.id}`}
-                                                className="btn-action btn-edit"
+                                                to={`/staff/pages/${page.id}/edit`}
+                                                className="btn-edit"
                                                 title="Edit"
                                             >
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                                </svg>
+                                                jhug
                                             </Link>
-                                            <button
-                                                onClick={() => toggleActive(page.id, page.is_active)}
-                                                className={`btn-action btn-toggle ${page.is_active ? 'active' : 'inactive'}`}
-                                                title={page.is_active ? 'Deactivate' : 'Activate'}
-                                            >
-                                                <div className="toggle-switch">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -150,3 +186,4 @@ function PageList() {
 }
 
 export default PageList;
+

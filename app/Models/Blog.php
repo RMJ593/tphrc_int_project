@@ -8,33 +8,60 @@ use Illuminate\Support\Str;
 class Blog extends Model
 {
     protected $fillable = [
-        'blog_category_id', 'user_id', 'title', 'slug', 'excerpt',
-        'content', 'featured_image', 'meta_title', 'meta_description',
-        'is_published', 'published_at'
+        'title',
+        'slug',
+        'small_description',
+        'content',
+        'category_id',
+        'image',
+        'banner_image',
+        'tags',
+        'seo_title',
+        'meta_keywords',
+        'meta_description',
+        'meta_image',
+        'robots',
+        'og_type',
+        'is_active'
     ];
 
     protected $casts = [
-        'is_published' => 'boolean',
-        'published_at' => 'datetime'
+        'is_active' => 'boolean',
     ];
 
     protected static function boot()
     {
         parent::boot();
+
         static::creating(function ($blog) {
             if (empty($blog->slug)) {
                 $blog->slug = Str::slug($blog->title);
+                
+                $originalSlug = $blog->slug;
+                $count = 1;
+                while (static::where('slug', $blog->slug)->exists()) {
+                    $blog->slug = $originalSlug . '-' . $count;
+                    $count++;
+                }
+            }
+        });
+
+        static::updating(function ($blog) {
+            if ($blog->isDirty('title') && empty($blog->slug)) {
+                $blog->slug = Str::slug($blog->title);
+                
+                $originalSlug = $blog->slug;
+                $count = 1;
+                while (static::where('slug', $blog->slug)->where('id', '!=', $blog->id)->exists()) {
+                    $blog->slug = $originalSlug . '-' . $count;
+                    $count++;
+                }
             }
         });
     }
 
     public function category()
     {
-        return $this->belongsTo(BlogCategory::class, 'blog_category_id');
-    }
-
-    public function author()
-    {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(BlogCategory::class, 'category_id');
     }
 }

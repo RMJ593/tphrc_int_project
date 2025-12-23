@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft } from 'lucide-react';
@@ -268,7 +268,7 @@ function MenuItemForm() {
                                 onChange={handleChange}
                                 className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                             />
-                            <span className="ml-2 text-sm text-gray-700">🥬 Vegetarian</span>
+                            <span className="ml-2 text-sm text-gray-700"> Vegetarian</span>
                         </label>
                         <label className="flex items-center">
                             <input
@@ -278,7 +278,7 @@ function MenuItemForm() {
                                 onChange={handleChange}
                                 className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                             />
-                            <span className="ml-2 text-sm text-gray-700">🌶️ Spicy</span>
+                            <span className="ml-2 text-sm text-gray-700"> Spicy</span>
                         </label>
                         <label className="flex items-center">
                             <input
@@ -288,7 +288,7 @@ function MenuItemForm() {
                                 onChange={handleChange}
                                 className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                             />
-                            <span className="ml-2 text-sm text-gray-700">✅ Available</span>
+                            <span className="ml-2 text-sm text-gray-700"> Available</span>
                         </label>
                         <label className="flex items-center">
                             <input
@@ -298,7 +298,7 @@ function MenuItemForm() {
                                 onChange={handleChange}
                                 className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                             />
-                            <span className="ml-2 text-sm text-gray-700">⭐ Featured</span>
+                            <span className="ml-2 text-sm text-gray-700"> Featured</span>
                         </label>
                     </div>
 
@@ -325,3 +325,4 @@ function MenuItemForm() {
 }
 
 export default MenuItemForm;
+

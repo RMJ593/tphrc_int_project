@@ -2,39 +2,40 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 class Page extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
+        'small_heading',
+        'page_title',
         'slug',
+        'location',
+        'hero_banner_id',
         'content',
+        'banner_image',
+        'meta_image',
+        'seo_title',
         'meta_title',
+        'meta_keywords',
         'meta_description',
-        'featured_image',
-        'is_active'
+        'robots',
+        'og_type',
+        'is_active',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    protected static function boot()
+    public function heroBanner()
     {
-        parent::boot();
-        
-        static::creating(function ($page) {
-            if (empty($page->slug)) {
-                $page->slug = Str::slug($page->title);
-            }
-        });
-        
-        static::updating(function ($page) {
-            if ($page->isDirty('title') && empty($page->slug)) {
-                $page->slug = Str::slug($page->title);
-            }
-        });
+        return $this->belongsTo(HeroBanner::class);
     }
 }

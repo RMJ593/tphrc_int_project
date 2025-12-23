@@ -14,10 +14,9 @@ return new class extends Migration
         Schema::create('testimonials', function (Blueprint $table) {
             $table->id();
             $table->string('customer_name');
-            $table->string('customer_image')->nullable();
             $table->text('review');
-            $table->integer('rating')->default(5);
-            $table->boolean('is_featured')->default(false);
+            $table->string('customer_image');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

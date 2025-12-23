@@ -4,14 +4,19 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
     plugins: [
-        react({
-            fastRefresh: false,
-        }),
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.jsx'],
             refresh: true,
         }),
+        react({
+            jsxRuntime: 'automatic',
+        }),
     ],
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
+    },
     server: {
         hmr: {
             overlay: false,

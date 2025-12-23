@@ -31,7 +31,7 @@ class HeroBannerController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'subtitle' => 'nullable|string|max:255',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image' => 'required|file|mimes:mp4,webm,ogg,mov,avi|max:102400', // 100MB in KB - Changed to accept videos
             'button_text' => 'nullable|string|max:255',
             'button_link' => 'nullable|string|max:255',
             'order' => 'nullable|integer',
@@ -50,12 +50,12 @@ class HeroBannerController extends Controller
             $data = $request->only(['title', 'subtitle', 'button_text', 'button_link', 'order']);
             $data['is_active'] = $request->has('is_active') ? (bool)$request->is_active : true;
 
-            // Handle image upload
+            // Handle video upload (field name is still 'image' for backward compatibility)
             if ($request->hasFile('image')) {
-                $image = $request->file('image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $imagePath = $image->storeAs('hero-banners', $imageName, 'public');
-                $data['image_path'] = $imagePath;
+                $video = $request->file('image');
+                $videoName = time() . '_' . $video->getClientOriginalName();
+                $videoPath = $video->storeAs('hero-banners', $videoName, 'public');
+                $data['image_path'] = $videoPath;
             }
 
             $banner = HeroBanner::create($data);
@@ -112,7 +112,7 @@ class HeroBannerController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'subtitle' => 'nullable|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image' => 'nullable|file|mimes:mp4,webm,ogg,mov,avi|max:102400', // 100MB - Video optional on update
             'button_text' => 'nullable|string|max:255',
             'button_link' => 'nullable|string|max:255',
             'order' => 'nullable|integer',
@@ -134,17 +134,17 @@ class HeroBannerController extends Controller
                 $data['is_active'] = (bool)$request->is_active;
             }
 
-            // Handle image upload
+            // Handle video upload
             if ($request->hasFile('image')) {
-                // Delete old image if exists
+                // Delete old video if exists
                 if ($banner->image_path && Storage::disk('public')->exists($banner->image_path)) {
                     Storage::disk('public')->delete($banner->image_path);
                 }
 
-                $image = $request->file('image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $imagePath = $image->storeAs('hero-banners', $imageName, 'public');
-                $data['image_path'] = $imagePath;
+                $video = $request->file('image');
+                $videoName = time() . '_' . $video->getClientOriginalName();
+                $videoPath = $video->storeAs('hero-banners', $videoName, 'public');
+                $data['image_path'] = $videoPath;
             }
 
             $banner->update($data);
@@ -179,7 +179,7 @@ class HeroBannerController extends Controller
         }
 
         try {
-            // Delete image if exists
+            // Delete video if exists
             if ($banner->image_path && Storage::disk('public')->exists($banner->image_path)) {
                 Storage::disk('public')->delete($banner->image_path);
             }

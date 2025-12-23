@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, ChevronDown, ChevronRight } from 'lucide-react';
 import './AdminLayout.css';
@@ -6,6 +6,7 @@ import './AdminLayout.css';
 function AdminLayout({ children, onLogout, username = "Super Admin", userEmail = "" }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [menusExpanded, setMenusExpanded] = useState(false);
+    const [blogExpanded, setBlogExpanded] = useState(false);
     const location = useLocation();
 
     const isActive = (path) => location.pathname === path;
@@ -18,8 +19,8 @@ function AdminLayout({ children, onLogout, username = "Super Admin", userEmail =
         {
             title: 'USERS',
             items: [
-                { label: 'Permissions', path: '/staff/permissions', emoji: '🔒' },
-                { label: 'Roles', path: '/staff/roles', emoji: '🕵️‍♂️' },
+                { label: 'Permissions', path: '/staff/permissions', emoji: '🔑' },
+                { label: 'Roles', path: '/staff/roles', emoji: '🕵️' },
                 { label: 'Users', path: '/staff/users', emoji: '👥' },
                 { label: 'User Responses', path: '/staff/user-responses', emoji: '💬' },
                 { label: 'Table Bookings', path: '/staff/table-bookings', emoji: '🍴' },
@@ -34,12 +35,14 @@ function AdminLayout({ children, onLogout, username = "Super Admin", userEmail =
                     path: '/staff/menus', 
                     emoji: '⚓',
                     hasSubmenu: true,
+                    expandState: menusExpanded,
+                    setExpandState: setMenusExpanded,
                     submenu: [
-                        { label: 'Top Menus', path: '/staff/menus/top' },
-                        { label: 'Footer Links', path: '/staff/menus/footer' },
+                        { label: 'Top Menus', path: '/staff/top-menu' },
+                        { label: 'Footer Links', path: '/staff/footer-links' },
                     ]
                 },
-                { label: 'Hero Banner', path: '/staff/hero-banners', emoji: '📜' },
+                { label: 'Hero Banner', path: '/staff/hero-banners', emoji: '🖼️' },
                 { label: 'Pages', path: '/staff/pages', emoji: '📄' },
             ]
         },
@@ -55,33 +58,47 @@ function AdminLayout({ children, onLogout, username = "Super Admin", userEmail =
             title: 'PRODUCTS',
             items: [
                 { label: 'Categories', path: '/staff/categories', emoji: '📁' },
-                { label: 'Products', path: '/staff/menu-items', emoji: '🛒' },
+                { label: 'Products', path: '/staff/products', emoji: '🛒' },
             ]
         },
         {
             title: 'BLOG',
             items: [
-                { label: 'Categories', path: '/staff/blog-categories', emoji: '🗒️' },
-                { label: 'Blogs', path: '/staff/blogs', emoji: '🔊' },
+                { 
+                    label: 'Blog Management', 
+                    path: '/staff/blog', 
+                    emoji: '📝',
+                    hasSubmenu: true,
+                    expandState: blogExpanded,
+                    setExpandState: setBlogExpanded,
+                    submenu: [
+                        { label: 'Categories', path: '/staff/blog-categories' },
+                        { label: 'Blogs', path: '/staff/blogs' },
+                    ]
+                },
             ]
         },
         {
             title: 'MANAGEMENT',
             items: [
                 { label: 'General Settings', path: '/staff/settings', emoji: '🔧' },
+                { label: 'Mail Templates', path: '/staff/mail-templates', emoji: '📧' },
                 { label: 'Clear Cache', path: '/staff/clear-cache', emoji: '↩️' },
-                { label: 'Sync with Website', path: '/staff/sync', emoji: '🔁' },
+                { label: 'Sync with Website', path: '/staff/sync', emoji: '🔄' },
             ]
         }
     ];
 
     const renderMenuItem = (item) => {
         if (item.hasSubmenu) {
+            const isExpanded = item.expandState;
+            const setExpanded = item.setExpandState;
+            
             return (
                 <div key={item.path} className="sidebar-item-with-submenu">
                     <div
                         className={`sidebar-item ${isActive(item.path) ? 'sidebar-item-active' : ''}`}
-                        onClick={() => setMenusExpanded(!menusExpanded)}
+                        onClick={() => setExpanded(!isExpanded)}
                         style={{ cursor: 'pointer' }}
                     >
                         <span className="sidebar-emoji">{item.emoji}</span>
@@ -89,12 +106,12 @@ function AdminLayout({ children, onLogout, username = "Super Admin", userEmail =
                             <>
                                 <span className="sidebar-text">{item.label}</span>
                                 <span className="dropdown-icon">
-                                    {menusExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                 </span>
                             </>
                         )}
                     </div>
-                    {menusExpanded && sidebarOpen && (
+                    {isExpanded && sidebarOpen && (
                         <div className="submenu">
                             {item.submenu.map((subItem) => (
                                 <Link
@@ -240,3 +257,4 @@ function AdminLayout({ children, onLogout, username = "Super Admin", userEmail =
 }
 
 export default AdminLayout;
+

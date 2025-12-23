@@ -9,7 +9,7 @@
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",
         "@tailwindcss/vite": "^4.0.0",
-        "@vitejs/plugin-react": "^5.0.0",
+        "@vitejs/plugin-react": "^4.0.0",
         "alpinejs": "^3.4.2",
         "autoprefixer": "^10.4.2",
         "axios": "^1.13.1",
@@ -20,9 +20,13 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "@tinymce/tinymce-react": "^6.3.0",
+        "draft-js": "^0.11.7",
+        "draftjs-to-html": "^0.9.1",
         "lucide-react": "^0.552.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
+        "react-draft-wysiwyg": "^1.15.0",
         "react-router-dom": "^7.9.5"
     }
 }

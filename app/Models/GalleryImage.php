@@ -10,11 +10,11 @@ class GalleryImage extends Model
         'title',
         'image',
         'description',
-        'order'
+        'order',
+        'is_active'
     ];
 
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('order');
-    }
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 }

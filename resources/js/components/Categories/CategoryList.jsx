@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import './Categories.css';
 
 function CategoryList() {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
         fetchCategories();
@@ -17,122 +18,146 @@ function CategoryList() {
             const response = await axios.get('/api/categories', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setCategories(response.data.data);
+            if (response.data.success) {
+                setCategories(response.data.data);
+            }
         } catch (error) {
             console.error('Error fetching categories:', error);
+            setMessage('Failed to load categories');
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this category?')) return;
+        if (!window.confirm('Are you sure you want to delete this category?')) return;
 
         try {
             const token = localStorage.getItem('auth_token');
-            await axios.delete(`/api/categories/${id}`, {
+            const response = await axios.delete(`/api/categories/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            fetchCategories(); // Refresh list
+            if (response.data.success) {
+                setMessage('Category deleted successfully');
+                fetchCategories();
+                setTimeout(() => setMessage(''), 3000);
+            }
         } catch (error) {
             console.error('Error deleting category:', error);
-            alert('Failed to delete category');
+            setMessage('Failed to delete category');
+        }
+    };
+
+    const toggleActive = async (id, currentStatus) => {
+        try {
+            const token = localStorage.getItem('auth_token');
+            const response = await axios.put(`/api/categories/${id}`, {
+                is_active: !currentStatus
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                fetchCategories();
+            }
+        } catch (error) {
+            console.error('Error updating active status:', error);
         }
     };
 
     if (loading) {
-        return <div className="text-center py-8">Loading...</div>;
+        return <div className="category-container"><div className="loading">Loading...</div></div>;
     }
 
     return (
-        <div>
-            <div className="mb-6 flex justify-between items-center">
-                <h1 className="text-2xl font-semibold text-gray-900">Categories</h1>
-                <Link
-                    to="/categories/create"
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center"
-                >
-                    <Plus size={20} className="mr-2" />
-                    Add Category
-                </Link>
+        <div className="category-container">
+            <div className="page-header-simple">
+                <h1>Product Categories</h1>
             </div>
 
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {categories.length === 0 ? (
+            {message && (
+                <div className={`alert ${message.includes('success') ? 'alert-success' : 'alert-error'}`}>
+                    {message}
+                </div>
+            )}
+
+            <div className="table-card">
+                <div className="table-header-actions">
+                    <Link to="/staff/categories/create" className="btn-new-green">
+                        + Add New
+                    </Link>
+                </div>
+
+                <div className="table-wrapper">
+                    <table className="data-table-simple">
+                        <thead>
                             <tr>
-                                <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                                    No categories found. <Link to="/categories/create" className="text-red-600 hover:text-red-700">Create one now</Link>
-                                </td>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Action</th>
                             </tr>
-                        ) : (
-                            categories.map((category) => (
-                                <tr key={category.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {category.image ? (
-                                            <img
-                                                src={`/storage/${category.image}`}
-                                                alt={category.name}
-                                                className="w-16 h-16 object-cover rounded"
-                                            />
-                                        ) : (
-                                            <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                                                <span className="text-gray-400 text-xs">No image</span>
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-gray-900">{category.name}</div>
-                                        <div className="text-sm text-gray-500">{category.description?.substring(0, 50)}...</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {category.menu_items_count || 0} items
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {category.order}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            category.is_active 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-red-100 text-red-800'
-                                        }`}>
-                                            {category.is_active ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <Link
-                                            to={`/categories/${category.id}/edit`}
-                                            className="text-blue-600 hover:text-blue-900 mr-3 inline-flex items-center"
-                                        >
-                                            <Edit size={16} className="mr-1" /> Edit
-                                        </Link>
-                                        <button
-                                            onClick={() => handleDelete(category.id)}
-                                            className="text-red-600 hover:text-red-900 inline-flex items-center"
-                                        >
-                                            <Trash2 size={16} className="mr-1" /> Delete
-                                        </button>
+                        </thead>
+                        <tbody>
+                            {categories.length === 0 ? (
+                                <tr>
+                                    <td colSpan="3" className="empty-row">
+                                        No categories found
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ) : (
+                                categories.map((category, index) => (
+                                    <tr key={category.id}>
+                                        <td>{index + 1}</td>
+                                        <td>
+                                            <div className="name-with-image">
+                                                {category.image ? (
+                                                    <img
+                                                        src={`/storage/${category.image}`}
+                                                        alt={category.name}
+                                                        className="table-image-rectangle"
+                                                    />
+                                                ) : (
+                                                    <div className="no-image-placeholder-rect">No Image</div>
+                                                )}
+                                                <strong>{category.name}</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                <Link
+                                                    to={`/staff/categories/${category.id}/edit`}
+                                                    className="action-btn edit-btn"
+                                                    title="Edit"
+                                                >
+                                                    hghgh
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDelete(category.id)}
+                                                    className="action-btn delete-btn"
+                                                    title="Delete"
+                                                >
+                                                    hjhj
+                                                </button>
+                                                <label className="toggle-switch-small" title="Toggle Active Status">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={category.is_active}
+                                                        onChange={() => toggleActive(category.id, category.is_active)}
+                                                    />
+                                                    <span className="toggle-slider-small"></span>
+                                                </label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
 }
 
 export default CategoryList;
+

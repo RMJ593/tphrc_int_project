@@ -16,12 +16,20 @@ class PageController extends Controller
      */
     public function index()
     {
-        $pages = Page::orderBy('title', 'asc')->get();
-        
-        return response()->json([
-            'success' => true,
-            'data' => $pages
-        ]);
+        try {
+            $pages = Page::orderBy('created_at', 'desc')->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $pages
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pages',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -30,13 +38,20 @@ class PageController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'page_title' => 'required|string|max:255',
+            'small_heading' => 'required|string|max:255',
             'title' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:pages,slug',
-            'content' => 'required|string',
-            'meta_title' => 'nullable|string|max:255',
+            'slug' => 'required|string|max:255|unique:pages,slug',
+            'location' => 'required|string|max:255',
+            'hero_banner_id' => 'nullable|exists:hero_banners,id',
+            'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'content' => 'nullable|string',
+            'seo_title' => 'nullable|string|max:255',
+            'meta_keywords' => 'nullable|string',
             'meta_description' => 'nullable|string',
-            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'is_active' => 'nullable|boolean'
+            'robots' => 'nullable|string',
+            'og_type' => 'nullable|string',
+            'meta_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
         if ($validator->fails()) {
@@ -48,21 +63,21 @@ class PageController extends Controller
         }
 
         try {
-            $data = $request->only(['title', 'slug', 'content', 'meta_title', 'meta_description']);
-            
-            // Generate slug if not provided
-            if (empty($data['slug'])) {
-                $data['slug'] = Str::slug($data['title']);
-            }
-            
-            $data['is_active'] = $request->has('is_active') ? (bool)$request->is_active : true;
+            $data = $request->except(['banner_image', 'meta_image']);
+            $data['is_active'] = 1; // Active by default
 
-            // Handle featured image upload
-            if ($request->hasFile('featured_image')) {
-                $image = $request->file('featured_image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $imagePath = $image->storeAs('pages', $imageName, 'public');
-                $data['featured_image'] = $imagePath;
+            // Handle banner image upload
+            if ($request->hasFile('banner_image')) {
+                $bannerImage = $request->file('banner_image');
+                $bannerPath = $bannerImage->store('pages/banners', 'public');
+                $data['banner_image'] = $bannerPath;
+            }
+
+            // Handle meta image upload
+            if ($request->hasFile('meta_image')) {
+                $metaImage = $request->file('meta_image');
+                $metaPath = $metaImage->store('pages/meta', 'public');
+                $data['meta_image'] = $metaPath;
             }
 
             $page = Page::create($data);
@@ -72,7 +87,6 @@ class PageController extends Controller
                 'message' => 'Page created successfully',
                 'data' => $page
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -87,19 +101,28 @@ class PageController extends Controller
      */
     public function show($id)
     {
-        $page = Page::find($id);
-
-        if (!$page) {
+        try {
+            $page = Page::findOrFail($id);
+            
+            // Add full URL for images
+            if ($page->banner_image) {
+                $page->banner_image_url = Storage::url($page->banner_image);
+            }
+            if ($page->meta_image) {
+                $page->meta_image_url = Storage::url($page->meta_image);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $page
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Page not found'
+                'message' => 'Page not found',
+                'error' => $e->getMessage()
             ], 404);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => $page
-        ]);
     }
 
     /**
@@ -107,22 +130,21 @@ class PageController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $page = Page::find($id);
-
-        if (!$page) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Page not found'
-            ], 404);
-        }
-
         $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:pages,slug,' . $id,
-            'content' => 'sometimes|required|string',
-            'meta_title' => 'nullable|string|max:255',
+            'page_title' => 'required|string|max:255',
+            'small_heading' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:pages,slug,' . $id,
+            'location' => 'required|string|max:255',
+            'hero_banner_id' => 'nullable|exists:hero_banners,id',
+            'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'content' => 'nullable|string',
+            'seo_title' => 'nullable|string|max:255',
+            'meta_keywords' => 'nullable|string',
             'meta_description' => 'nullable|string',
-            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'robots' => 'nullable|string',
+            'og_type' => 'nullable|string',
+            'meta_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_active' => 'nullable|boolean'
         ]);
 
@@ -135,28 +157,30 @@ class PageController extends Controller
         }
 
         try {
-            $data = $request->only(['title', 'slug', 'content', 'meta_title', 'meta_description']);
+            $page = Page::findOrFail($id);
             
-            // Generate slug if title changed and slug is empty
-            if ($request->has('title') && empty($data['slug'])) {
-                $data['slug'] = Str::slug($data['title']);
-            }
-            
-            if ($request->has('is_active')) {
-                $data['is_active'] = (bool)$request->is_active;
-            }
+            $data = $request->except(['banner_image', 'meta_image', '_method']);
 
-            // Handle featured image upload
-            if ($request->hasFile('featured_image')) {
-                // Delete old image if exists
-                if ($page->featured_image && Storage::disk('public')->exists($page->featured_image)) {
-                    Storage::disk('public')->delete($page->featured_image);
+            // Handle banner image upload
+            if ($request->hasFile('banner_image')) {
+                // Delete old image
+                if ($page->banner_image) {
+                    Storage::disk('public')->delete($page->banner_image);
                 }
+                $bannerImage = $request->file('banner_image');
+                $bannerPath = $bannerImage->store('pages/banners', 'public');
+                $data['banner_image'] = $bannerPath;
+            }
 
-                $image = $request->file('featured_image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $imagePath = $image->storeAs('pages', $imageName, 'public');
-                $data['featured_image'] = $imagePath;
+            // Handle meta image upload
+            if ($request->hasFile('meta_image')) {
+                // Delete old image
+                if ($page->meta_image) {
+                    Storage::disk('public')->delete($page->meta_image);
+                }
+                $metaImage = $request->file('meta_image');
+                $metaPath = $metaImage->store('pages/meta', 'public');
+                $data['meta_image'] = $metaPath;
             }
 
             $page->update($data);
@@ -165,8 +189,7 @@ class PageController extends Controller
                 'success' => true,
                 'message' => 'Page updated successfully',
                 'data' => $page
-            ]);
-
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -177,32 +200,62 @@ class PageController extends Controller
     }
 
     /**
+     * Update page status
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|integer|in:0,1'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $page = Page::findOrFail($id);
+            $page->update(['is_active' => $request->status]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Page status updated successfully',
+                'data' => $page
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update page status',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Remove the specified page
      */
     public function destroy($id)
     {
-        $page = Page::find($id);
-
-        if (!$page) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Page not found'
-            ], 404);
-        }
-
         try {
-            // Delete featured image if exists
-            if ($page->featured_image && Storage::disk('public')->exists($page->featured_image)) {
-                Storage::disk('public')->delete($page->featured_image);
+            $page = Page::findOrFail($id);
+            
+            // Delete images
+            if ($page->banner_image) {
+                Storage::disk('public')->delete($page->banner_image);
             }
-
+            if ($page->meta_image) {
+                Storage::disk('public')->delete($page->meta_image);
+            }
+            
             $page->delete();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Page deleted successfully'
-            ]);
-
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

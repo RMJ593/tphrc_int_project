@@ -5,95 +5,222 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::withCount('menuItems')->ordered()->get();
-        
-        return response()->json([
-            'success' => true,
-            'data' => $categories
-        ]);
+        try {
+            $categories = Category::orderBy('order', 'asc')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            return response()->json([
+                'success' => true,
+                'data' => $categories
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching categories: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch categories'
+            ], 500);
+        }
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'order' => 'nullable|integer',
-            'is_active' => 'boolean'
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'small_heading' => 'required|string|max:255',
+                'location' => 'required|string|max:255',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'description' => 'nullable|string',
+                'order' => 'nullable|integer',
+                'is_royalty' => 'nullable|boolean',
+                'is_special_selection' => 'nullable|boolean'
+            ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('categories', 'public');
+            }
 
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('categories', 'public');
+            // Generate unique slug
+            $slug = Str::slug($validated['name']);
+            $originalSlug = $slug;
+            $count = 1;
+            while (Category::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count;
+                $count++;
+            }
+
+            $category = Category::create([
+                'name' => $validated['name'],
+                'slug' => $slug,
+                'small_heading' => $validated['small_heading'],
+                'location' => $validated['location'],
+                'description' => $validated['description'] ?? null,
+                'image' => $imagePath,
+                'order' => $validated['order'] ?? 0,
+                'is_active' => true,
+                'is_royalty' => $request->is_royalty ?? false,
+                'is_special_selection' => $request->is_special_selection ?? false
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $category,
+                'message' => 'Category created successfully'
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error creating category: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create category: ' . $e->getMessage()
+            ], 500);
         }
-
-        $category = Category::create($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Category created successfully',
-            'data' => $category
-        ], 201);
     }
 
-    public function show(Category $category)
+    public function show($id)
     {
-        $category->load('menuItems');
-        
-        return response()->json([
-            'success' => true,
-            'data' => $category
-        ]);
+        try {
+            $category = Category::findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'data' => $category
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Category not found'
+            ], 404);
+        }
     }
 
-    public function update(Request $request, Category $category)
+    public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'order' => 'nullable|integer',
-            'is_active' => 'boolean'
-        ]);
+        try {
+            $category = Category::findOrFail($id);
 
-        $validated['slug'] = Str::slug($validated['name']);
+            $validated = $request->validate([
+                'name' => 'sometimes|required|string|max:255',
+                'small_heading' => 'sometimes|required|string|max:255',
+                'location' => 'sometimes|required|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'description' => 'nullable|string',
+                'order' => 'nullable|integer',
+                'is_active' => 'sometimes|boolean',
+                'is_royalty' => 'sometimes|boolean',
+                'is_special_selection' => 'sometimes|boolean'
+            ]);
 
-        if ($request->hasFile('image')) {
+            $data = [];
+            
+            if ($request->has('name')) {
+                $data['name'] = $validated['name'];
+                
+                // Regenerate slug if name changed
+                $slug = Str::slug($validated['name']);
+                $originalSlug = $slug;
+                $count = 1;
+                while (Category::where('slug', $slug)->where('id', '!=', $id)->exists()) {
+                    $slug = $originalSlug . '-' . $count;
+                    $count++;
+                }
+                $data['slug'] = $slug;
+            }
+            
+            if ($request->has('small_heading')) {
+                $data['small_heading'] = $validated['small_heading'];
+            }
+            
+            if ($request->has('location')) {
+                $data['location'] = $validated['location'];
+            }
+            
+            if ($request->has('description')) {
+                $data['description'] = $validated['description'];
+            }
+            
+            if ($request->has('order')) {
+                $data['order'] = $validated['order'];
+            }
+
+            if ($request->hasFile('image')) {
+                if ($category->image) {
+                    Storage::disk('public')->delete($category->image);
+                }
+                $data['image'] = $request->file('image')->store('categories', 'public');
+            }
+
+            if ($request->has('is_active')) {
+                $data['is_active'] = $validated['is_active'];
+            }
+            
+            if ($request->has('is_royalty')) {
+                $data['is_royalty'] = $validated['is_royalty'];
+            }
+            
+            if ($request->has('is_special_selection')) {
+                $data['is_special_selection'] = $validated['is_special_selection'];
+            }
+
+            $category->update($data);
+
+            return response()->json([
+                'success' => true,
+                'data' => $category,
+                'message' => 'Category updated successfully'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating category: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update category'
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $category = Category::findOrFail($id);
+            
             if ($category->image) {
                 Storage::disk('public')->delete($category->image);
             }
-            $validated['image'] = $request->file('image')->store('categories', 'public');
+
+            $category->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Category deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting category: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete category'
+            ], 500);
         }
-
-        $category->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Category updated successfully',
-            'data' => $category
-        ]);
-    }
-
-    public function destroy(Category $category)
-    {
-        if ($category->image) {
-            Storage::disk('public')->delete($category->image);
-        }
-
-        $category->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Category deleted successfully'
-        ]);
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import './HeroBanner.css';
@@ -199,7 +199,7 @@ function HeroBannerForm() {
             <div className="form-header">
                 <h1>{isEditMode ? 'Edit Hero Banner' : 'Create Hero Banner'}</h1>
                 <Link to="/staff/hero-banners" className="btn-back">
-                    ← Back to List
+                    Back to List
                 </Link>
             </div>
 
@@ -269,7 +269,7 @@ function HeroBannerForm() {
                         </small>
                         {!videoFile && !isEditMode && (
                             <small style={{ color: 'red', display: 'block', marginTop: '0.5rem' }}>
-                                ⚠️ Please select a video file before submitting
+                                 Please select a video file before submitting
                             </small>
                         )}
                     </div>
@@ -391,3 +391,4 @@ function HeroBannerForm() {
 }
 
 export default HeroBannerForm;
+

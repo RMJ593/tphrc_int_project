@@ -15,7 +15,7 @@ class TeamMemberController extends Controller
      */
     public function index()
     {
-        $members = TeamMember::orderBy('order', 'asc')->get();
+        $members = TeamMember::orderBy('id', 'desc')->get();
         
         return response()->json([
             'success' => true,
@@ -29,14 +29,14 @@ class TeamMemberController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'company_id' => 'required|string|max:255|unique:team_members,company_id',
             'name' => 'required|string|max:255',
-            'position' => 'required|string|max:255',
+            'designation' => 'required|string|max:255',
+            'description' => 'required|string',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'bio' => 'nullable|string',
             'facebook' => 'nullable|url|max:255',
             'twitter' => 'nullable|url|max:255',
             'instagram' => 'nullable|url|max:255',
-            'order' => 'nullable|integer'
         ]);
 
         if ($validator->fails()) {
@@ -48,7 +48,8 @@ class TeamMemberController extends Controller
         }
 
         try {
-            $data = $request->only(['name', 'position', 'bio', 'facebook', 'twitter', 'instagram', 'order']);
+            $data = $request->only(['company_id', 'name', 'designation', 'description', 'facebook', 'twitter', 'instagram']);
+            $data['is_active'] = true; // Default to active
 
             // Handle image upload
             if ($request->hasFile('image')) {
@@ -110,14 +111,14 @@ class TeamMemberController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'position' => 'sometimes|required|string|max:255',
+            'company_id' => 'required|string|max:255|unique:team_members,company_id,' . $id,
+            'name' => 'required|string|max:255',
+            'designation' => 'required|string|max:255',
+            'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'bio' => 'nullable|string',
             'facebook' => 'nullable|url|max:255',
             'twitter' => 'nullable|url|max:255',
             'instagram' => 'nullable|url|max:255',
-            'order' => 'nullable|integer'
         ]);
 
         if ($validator->fails()) {
@@ -129,7 +130,7 @@ class TeamMemberController extends Controller
         }
 
         try {
-            $data = $request->only(['name', 'position', 'bio', 'facebook', 'twitter', 'instagram', 'order']);
+            $data = $request->only(['company_id', 'name', 'designation', 'description', 'facebook', 'twitter', 'instagram']);
 
             // Handle image upload
             if ($request->hasFile('image')) {
@@ -156,6 +157,39 @@ class TeamMemberController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update team member',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Toggle active status of team member
+     */
+    public function toggle(Request $request, $id)
+    {
+        $member = TeamMember::find($id);
+
+        if (!$member) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Team member not found'
+            ], 404);
+        }
+
+        try {
+            $member->is_active = $request->input('is_active', !$member->is_active);
+            $member->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Team member status updated successfully',
+                'data' => $member
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update status',
                 'error' => $e->getMessage()
             ], 500);
         }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './HeroBanner.css';
@@ -71,10 +71,9 @@ function HeroBannerList() {
         }
     };
 
-    // Filter banners based on search
     const filteredBanners = banners.filter(banner =>
-        banner.heading?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        banner.small_heading?.toLowerCase().includes(searchTerm.toLowerCase())
+        banner.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        banner.subtitle?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -132,7 +131,7 @@ function HeroBannerList() {
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Heading ↑</th>
+                                <th>Heading †‘</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -149,12 +148,12 @@ function HeroBannerList() {
                                         <td>{index + 1}</td>
                                         <td>
                                             <div className="heading-cell">
-                                                {banner.small_heading && (
+                                                {banner.subtitle && (
                                                     <div className="banner-small-heading">
-                                                        {banner.small_heading}
+                                                        {banner.subtitle}
                                                     </div>
                                                 )}
-                                                <div className="banner-title">{banner.heading}</div>
+                                                <div className="banner-title">{banner.title}</div>
                                             </div>
                                         </td>
                                         <td>
@@ -164,7 +163,7 @@ function HeroBannerList() {
                                                     className="action-btn edit-btn"
                                                     title="Edit"
                                                 >
-                                                    ✏️
+                                                    ghghgh
                                                 </Link>
                                                 <label className="toggle-switch-small">
                                                     <input
@@ -179,7 +178,7 @@ function HeroBannerList() {
                                                     className="action-btn delete-btn"
                                                     title="Delete"
                                                 >
-                                                    🗑️
+                                                    ghghgh
                                                 </button>
                                             </div>
                                         </td>
@@ -206,3 +205,4 @@ function HeroBannerList() {
 }
 
 export default HeroBannerList;
+

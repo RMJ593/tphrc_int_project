@@ -7,14 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 class TeamMember extends Model
 {
     protected $fillable = [
+        'company_id',
         'name',
-        'position',
+        'designation',
+        'description',
         'image',
-        'bio',
         'facebook',
         'twitter',
         'instagram',
-        'order'
+        'is_active'
     ];
 
     public function scopeOrdered($query)

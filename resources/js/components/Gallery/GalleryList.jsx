@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Gallery.css';
@@ -7,8 +7,6 @@ function GalleryList() {
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [entriesPerPage, setEntriesPerPage] = useState(10);
 
     useEffect(() => {
         fetchImages();
@@ -44,9 +42,19 @@ function GalleryList() {
         }
     };
 
-    const filteredImages = images.filter(image =>
-        image.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const toggleActive = async (id, currentStatus) => {
+        try {
+            const response = await axios.put(`/api/gallery/${id}`, {
+                is_active: !currentStatus
+            });
+
+            if (response.data.success) {
+                fetchImages();
+            }
+        } catch (error) {
+            console.error('Error updating active status:', error);
+        }
+    };
 
     if (loading) {
         return <div className="gallery-container"><div className="loading">Loading...</div></div>;
@@ -67,72 +75,42 @@ function GalleryList() {
             <div className="table-card">
                 <div className="table-header-actions">
                     <Link to="/staff/gallery/create" className="btn-new-green">
-                        + New
+                        + Add New
                     </Link>
-                    <button className="btn-reorder">
-                        Reorder
-                    </button>
-                </div>
-
-                <div className="table-controls">
-                    <div className="entries-control">
-                        <label>Show</label>
-                        <select value={entriesPerPage} onChange={(e) => setEntriesPerPage(Number(e.target.value))}>
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                        <span>entries</span>
-                    </div>
-
-                    <div className="search-control">
-                        <label>Search:</label>
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder=""
-                        />
-                    </div>
                 </div>
 
                 <div className="table-wrapper">
-                    <table className="data-table">
+                    <table className="data-table-simple">
                         <thead>
                             <tr>
-                                <th>Order ↑</th>
-                                <th>Image</th>
-                                <th>Title ↑</th>
-                                <th>Description</th>
+                                <th>#</th>
+                                <th>Name</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredImages.length === 0 ? (
+                            {images.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="empty-row">
+                                    <td colSpan="3" className="empty-row">
                                         No gallery images found
                                     </td>
                                 </tr>
                             ) : (
-                                filteredImages.slice(0, entriesPerPage).map((image) => (
+                                images.map((image, index) => (
                                     <tr key={image.id}>
-                                        <td>{image.order}</td>
+                                        <td>{index + 1}</td>
                                         <td>
-                                            {image.image ? (
-                                                <img
-                                                    src={`/storage/${image.image}`}
-                                                    alt={image.title}
-                                                    className="table-image-rectangle"
-                                                />
-                                            ) : (
-                                                <div className="no-image-placeholder">No Image</div>
-                                            )}
-                                        </td>
-                                        <td><strong>{image.title}</strong></td>
-                                        <td>
-                                            <div className="description-truncate">
-                                                {image.description || '—'}
+                                            <div className="name-with-image">
+                                                {image.image ? (
+                                                    <img
+                                                        src={`/storage/${image.image}`}
+                                                        alt={image.title}
+                                                        className="table-image-small"
+                                                    />
+                                                ) : (
+                                                    <div className="no-image-placeholder">No Image</div>
+                                                )}
+                                                <strong>{image.title}</strong>
                                             </div>
                                         </td>
                                         <td>
@@ -142,15 +120,23 @@ function GalleryList() {
                                                     className="action-btn edit-btn"
                                                     title="Edit"
                                                 >
-                                                    ✏️
+                                                    hjhj
                                                 </Link>
                                                 <button
                                                     onClick={() => handleDelete(image.id)}
                                                     className="action-btn delete-btn"
                                                     title="Delete"
                                                 >
-                                                    🗑️
+                                                    ghhghg
                                                 </button>
+                                                <label className="toggle-switch-small" title="Toggle Active Status">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={image.is_active}
+                                                        onChange={() => toggleActive(image.id, image.is_active)}
+                                                    />
+                                                    <span className="toggle-slider-small"></span>
+                                                </label>
                                             </div>
                                         </td>
                                     </tr>
@@ -159,20 +145,10 @@ function GalleryList() {
                         </tbody>
                     </table>
                 </div>
-
-                <div className="table-footer">
-                    <div className="showing-info">
-                        Showing {filteredImages.length > 0 ? '1' : '0'} to {Math.min(entriesPerPage, filteredImages.length)} of {filteredImages.length} entries
-                    </div>
-                    <div className="pagination">
-                        <button className="page-btn" disabled>Previous</button>
-                        <button className="page-btn active">1</button>
-                        <button className="page-btn" disabled>Next</button>
-                    </div>
-                </div>
             </div>
         </div>
     );
 }
 
 export default GalleryList;
+

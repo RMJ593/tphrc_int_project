@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+﻿import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft } from 'lucide-react';
+import './Categories.css';
 
 function CategoryForm() {
     const navigate = useNavigate();
     const { id } = useParams();
-    const isEdit = !!id;
+    const isEditMode = !!id;
 
     const [formData, setFormData] = useState({
         name: '',
-        description: '',
-        order: 0,
-        is_active: true
+        small_heading: '',
+        location: ''
     });
-    const [image, setImage] = useState(null);
-    const [currentImage, setCurrentImage] = useState(null);
+
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [featured, setFeatured] = useState({
+        is_royalty: false,
+        is_special_selection: false
+    });
     const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState({});
+    const [error, setError] = useState('');
 
     useEffect(() => {
-        if (isEdit) {
+        if (isEditMode) {
             fetchCategory();
         }
     }, [id]);
@@ -31,191 +35,238 @@ function CategoryForm() {
             const response = await axios.get(`/api/categories/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const category = response.data.data;
-            setFormData({
-                name: category.name,
-                description: category.description || '',
-                order: category.order,
-                is_active: category.is_active
-            });
-            setCurrentImage(category.image);
+            if (response.data.success) {
+                const category = response.data.data;
+                setFormData({
+                    name: category.name,
+                    small_heading: category.small_heading || '',
+                    location: category.location || ''
+                });
+                setFeatured({
+                    is_royalty: category.is_royalty || false,
+                    is_special_selection: category.is_special_selection || false
+                });
+                if (category.image) {
+                    setImagePreview(`/storage/${category.image}`);
+                }
+            }
         } catch (error) {
             console.error('Error fetching category:', error);
+            setError('Failed to load category');
         }
     };
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        });
+    };
+
+    const handleToggle = (field) => {
+        setFeatured({
+            ...featured,
+            [field]: !featured[field]
+        });
     };
 
     const handleImageChange = (e) => {
-        setImage(e.target.files[0]);
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                setError('Image size should not exceed 2MB');
+                return;
+            }
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+            setError('');
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setErrors({});
+        setError('');
+
+        // Validation
+        if (!isEditMode && !imageFile) {
+            setError('Image is required');
+            setLoading(false);
+            return;
+        }
 
         try {
             const token = localStorage.getItem('auth_token');
-            const data = new FormData();
-            data.append('name', formData.name);
-            data.append('description', formData.description);
-            data.append('order', formData.order);
-            data.append('is_active', formData.is_active ? '1' : '0');
-            if (image) {
-                data.append('image', image);
+            const formDataToSend = new FormData();
+            formDataToSend.append('name', formData.name);
+            formDataToSend.append('small_heading', formData.small_heading);
+            formDataToSend.append('location', formData.location);
+            formDataToSend.append('is_royalty', featured.is_royalty ? '1' : '0');
+            formDataToSend.append('is_special_selection', featured.is_special_selection ? '1' : '0');
+
+            if (imageFile) {
+                formDataToSend.append('image', imageFile);
             }
 
-            if (isEdit) {
-                await axios.post(`/api/categories/${id}?_method=PUT`, data, {
-                    headers: { 
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
+            let response;
+            if (isEditMode) {
+                formDataToSend.append('_method', 'PUT');
+                response = await axios.post(
+                    `/api/categories/${id}`,
+                    formDataToSend,
+                    {
+                        headers: { 
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
                     }
-                });
+                );
             } else {
-                await axios.post('/api/categories', data, {
-                    headers: { 
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
+                response = await axios.post(
+                    '/api/categories',
+                    formDataToSend,
+                    {
+                        headers: { 
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
                     }
-                });
+                );
             }
 
-            navigate('/categories');
+            if (response.data.success) {
+                navigate('/staff/categories');
+            }
         } catch (error) {
-            if (error.response?.data?.errors) {
-                setErrors(error.response.data.errors);
-            } else {
-                alert('Failed to save category');
-            }
+            console.error('Error saving category:', error);
+            setError(error.response?.data?.message || 'Failed to save category');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="max-w-3xl mx-auto">
-            <button
-                onClick={() => navigate('/categories')}
-                className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
-            >
-                <ArrowLeft size={20} className="mr-2" />
-                Back to Categories
-            </button>
-
-            <div className="bg-white rounded-lg shadow p-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                    {isEdit ? 'Edit Category' : 'Create Category'}
-                </h1>
-
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Name *
-                        </label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                        />
-                        {errors.name && (
-                            <p className="mt-1 text-sm text-red-600">{errors.name[0]}</p>
-                        )}
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Description
-                        </label>
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            rows="3"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                        />
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Image
-                        </label>
-                        {currentImage && (
-                            <div className="mb-2">
-                                <img
-                                    src={`/storage/${currentImage}`}
-                                    alt="Current"
-                                    className="w-32 h-32 object-cover rounded"
-                                />
-                            </div>
-                        )}
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="w-full"
-                        />
-                        <p className="mt-1 text-xs text-gray-500">
-                            {isEdit ? 'Leave empty to keep current image' : ''}
-                        </p>
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Display Order
-                        </label>
-                        <input
-                            type="number"
-                            name="order"
-                            value={formData.order}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                        />
-                    </div>
-
-                    <div className="mb-6">
-                        <label className="flex items-center">
-                            <input
-                                type="checkbox"
-                                name="is_active"
-                                checked={formData.is_active}
-                                onChange={handleChange}
-                                className="rounded border-gray-300 text-red-600 focus:ring-red-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">Active</span>
-                        </label>
-                    </div>
-
-                    <div className="flex justify-end space-x-3">
-                        <button
-                            type="button"
-                            onClick={() => navigate('/categories')}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-                        >
-                            {loading ? 'Saving...' : (isEdit ? 'Update' : 'Create')} Category
-                        </button>
-                    </div>
-                </form>
+        <div className="category-form-container">
+            <div className="form-header">
+                <h1>{isEditMode ? 'Edit Product Category' : 'Add Product Category'}</h1>
+                <Link to="/staff/categories" className="btn-back">
+                    † Back to List
+                </Link>
             </div>
+
+            {error && (
+                <div className="alert alert-error">
+                    {error}
+                </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="category-form">
+                <div className="form-group">
+                    <label>Product Categories Name *</label>
+                    <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="form-control"
+                        placeholder="e.g., Pre-Starters, Starters, Mains"
+                        required
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label>Small Heading *</label>
+                    <input
+                        type="text"
+                        name="small_heading"
+                        value={formData.small_heading}
+                        onChange={handleChange}
+                        className="form-control"
+                        placeholder="Enter small heading"
+                        required
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label>Location *</label>
+                    <select
+                        name="location"
+                        value={formData.location}
+                        onChange={handleChange}
+                        className="form-control"
+                        required
+                    >
+                        <option value="">Select Location</option>
+                        <option value="Header Menu">Header Menu</option>
+                        <option value="Footer Menu">Footer Menu</option>
+                        <option value="Sidebar">Sidebar</option>
+                        <option value="Home Page">Home Page</option>
+                    </select>
+                </div>
+
+                <div className="form-group">
+                    <label>Image * {isEditMode && '(Leave empty to keep current image)'}</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="form-control-file"
+                        required={!isEditMode}
+                    />
+                    <small className="form-text">
+                        Preferred dimension: 285px x 336px. Max 2MB.
+                    </small>
+                </div>
+
+                {imagePreview && (
+                    <div className="image-preview-rectangle">
+                        <img src={imagePreview} alt="Preview" />
+                    </div>
+                )}
+
+                <div className="form-section">
+                    <h3>Features</h3>
+                    
+                    <div className="toggle-group">
+                        <label className="toggle-label">
+                            <span>Royalty</span>
+                            <label className="toggle-switch">
+                                <input
+                                    type="checkbox"
+                                    checked={featured.is_royalty}
+                                    onChange={() => handleToggle('is_royalty')}
+                                />
+                                <span className="toggle-slider"></span>
+                            </label>
+                        </label>
+                    </div>
+
+                    <div className="toggle-group">
+                        <label className="toggle-label">
+                            <span>Special Selection</span>
+                            <label className="toggle-switch">
+                                <input
+                                    type="checkbox"
+                                    checked={featured.is_special_selection}
+                                    onChange={() => handleToggle('is_special_selection')}
+                                />
+                                <span className="toggle-slider"></span>
+                            </label>
+                        </label>
+                    </div>
+                </div>
+
+                <div className="form-actions">
+                    <button type="submit" disabled={loading} className="btn-submit">
+                        {loading ? 'Saving...' : 'Submit'}
+                    </button>
+                </div>
+            </form>
         </div>
     );
 }
 
 export default CategoryForm;
+

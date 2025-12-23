@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './TeamMembers.css';
@@ -28,6 +28,22 @@ function TeamMemberList() {
         }
     };
 
+    const handleToggle = async (id, currentStatus) => {
+        try {
+            const response = await axios.patch(`/api/team-members/${id}/toggle`, {
+                is_active: !currentStatus
+            });
+            if (response.data.success) {
+                setMessage('Team member status updated successfully');
+                fetchMembers();
+                setTimeout(() => setMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('Error toggling team member:', error);
+            setMessage('Failed to update status');
+        }
+    };
+
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this team member?')) return;
 
@@ -46,7 +62,8 @@ function TeamMemberList() {
 
     const filteredMembers = members.filter(member =>
         member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.position.toLowerCase().includes(searchTerm.toLowerCase())
+        member.company_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.designation.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -70,9 +87,6 @@ function TeamMemberList() {
                     <Link to="/staff/team-members/create" className="btn-new-green">
                         + New
                     </Link>
-                    <button className="btn-reorder">
-                        Reorder
-                    </button>
                 </div>
 
                 <div className="table-controls">
@@ -101,54 +115,27 @@ function TeamMemberList() {
                     <table className="data-table">
                         <thead>
                             <tr>
-                                <th>Order ↑</th>
-                                <th>Image</th>
-                                <th>Name ↑</th>
-                                <th>Position ↑</th>
-                                <th>Social Links</th>
+                                <th>#</th>
+                                <th>Company ID</th>
+                                <th>Name</th>
+                                <th>Designation</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredMembers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="empty-row">
+                                    <td colSpan="5" className="empty-row">
                                         No team members found
                                     </td>
                                 </tr>
                             ) : (
-                                filteredMembers.slice(0, entriesPerPage).map((member) => (
+                                filteredMembers.slice(0, entriesPerPage).map((member, index) => (
                                     <tr key={member.id}>
-                                        <td>{member.order}</td>
-                                        <td>
-                                            {member.image ? (
-                                                <img
-                                                    src={`/storage/${member.image}`}
-                                                    alt={member.name}
-                                                    className="table-image-small"
-                                                />
-                                            ) : (
-                                                <div className="no-image-placeholder">No Image</div>
-                                            )}
-                                        </td>
-                                        <td><strong>{member.name}</strong></td>
-                                        <td>{member.position}</td>
-                                        <td>
-                                            <div className="social-links">
-                                                {member.facebook && (
-                                                    <a href={member.facebook} target="_blank" rel="noopener noreferrer" className="social-icon">📘</a>
-                                                )}
-                                                {member.twitter && (
-                                                    <a href={member.twitter} target="_blank" rel="noopener noreferrer" className="social-icon">🐦</a>
-                                                )}
-                                                {member.instagram && (
-                                                    <a href={member.instagram} target="_blank" rel="noopener noreferrer" className="social-icon">📷</a>
-                                                )}
-                                                {!member.facebook && !member.twitter && !member.instagram && (
-                                                    <span className="text-muted">—</span>
-                                                )}
-                                            </div>
-                                        </td>
+                                        <td>{index + 1}</td>
+                                        <td><strong>{member.company_id}</strong></td>
+                                        <td>{member.name}</td>
+                                        <td>{member.designation}</td>
                                         <td>
                                             <div className="action-buttons">
                                                 <Link
@@ -156,14 +143,22 @@ function TeamMemberList() {
                                                     className="action-btn edit-btn"
                                                     title="Edit"
                                                 >
-                                                    ✏️
+                                                    ghhgh
                                                 </Link>
+                                                <label className="toggle-switch" title="Toggle Active/Inactive">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={member.is_active || false}
+                                                        onChange={() => handleToggle(member.id, member.is_active)}
+                                                    />
+                                                    <span className="toggle-slider"></span>
+                                                </label>
                                                 <button
                                                     onClick={() => handleDelete(member.id)}
                                                     className="action-btn delete-btn"
                                                     title="Delete"
                                                 >
-                                                    🗑️
+                                                    gfgfgfg
                                                 </button>
                                             </div>
                                         </td>
@@ -190,3 +185,4 @@ function TeamMemberList() {
 }
 
 export default TeamMemberList;
+

@@ -8,19 +8,12 @@ class Testimonial extends Model
 {
     protected $fillable = [
         'customer_name',
-        'customer_image',
         'review',
-        'rating',
-        'is_featured'
+        'customer_image',
+        'is_active'
     ];
 
     protected $casts = [
-        'is_featured' => 'boolean',
-        'rating' => 'integer',
+        'is_active' => 'boolean',
     ];
-
-    public function scopeFeatured($query)
-    {
-        return $query->where('is_featured', true);
-    }
 }

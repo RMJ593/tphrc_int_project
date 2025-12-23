@@ -3,195 +3,158 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Testimonial;
+use App\Models\GalleryImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
-class TestimonialController extends Controller
+class GalleryController extends Controller
 {
-    /**
-     * Display a listing of testimonials
-     */
     public function index()
     {
-        $testimonials = Testimonial::orderBy('created_at', 'desc')->get();
-        
-        return response()->json([
-            'success' => true,
-            'data' => $testimonials
-        ]);
+        try {
+            $images = GalleryImage::orderBy('created_at', 'desc')->get();
+            return response()->json([
+                'success' => true,
+                'data' => $images
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching gallery images: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch gallery images'
+            ], 500);
+        }
     }
 
-    /**
-     * Store a newly created testimonial
-     */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'customer_name' => 'required|string|max:255',
-            'customer_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'review' => 'required|string',
-            'rating' => 'required|integer|min:1|max:5',
-            'is_featured' => 'nullable|boolean'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            $data = $request->only(['customer_name', 'review', 'rating']);
-            $data['is_featured'] = $request->has('is_featured') ? (bool)$request->is_featured : false;
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048'
+            ]);
 
-            // Handle image upload
-            if ($request->hasFile('customer_image')) {
-                $image = $request->file('customer_image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $imagePath = $image->storeAs('testimonials', $imageName, 'public');
-                $data['customer_image'] = $imagePath;
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('gallery', 'public');
             }
 
-            $testimonial = Testimonial::create($data);
+            $image = GalleryImage::create([
+                'title' => $validated['title'],
+                'image' => $imagePath,
+                'is_active' => true
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Testimonial created successfully',
-                'data' => $testimonial
+                'data' => $image,
+                'message' => 'Gallery image created successfully'
             ], 201);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create testimonial',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Display the specified testimonial
-     */
-    public function show($id)
-    {
-        $testimonial = Testimonial::find($id);
-
-        if (!$testimonial) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Testimonial not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $testimonial
-        ]);
-    }
-
-    /**
-     * Update the specified testimonial
-     */
-    public function update(Request $request, $id)
-    {
-        $testimonial = Testimonial::find($id);
-
-        if (!$testimonial) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Testimonial not found'
-            ], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'customer_name' => 'sometimes|required|string|max:255',
-            'customer_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'review' => 'sometimes|required|string',
-            'rating' => 'sometimes|required|integer|min:1|max:5',
-            'is_featured' => 'nullable|boolean'
-        ]);
-
-        if ($validator->fails()) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $e->errors()
             ], 422);
-        }
-
-        try {
-            $data = $request->only(['customer_name', 'review', 'rating']);
-            
-            if ($request->has('is_featured')) {
-                $data['is_featured'] = (bool)$request->is_featured;
-            }
-
-            // Handle image upload
-            if ($request->hasFile('customer_image')) {
-                // Delete old image if exists
-                if ($testimonial->customer_image && Storage::disk('public')->exists($testimonial->customer_image)) {
-                    Storage::disk('public')->delete($testimonial->customer_image);
-                }
-
-                $image = $request->file('customer_image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $imagePath = $image->storeAs('testimonials', $imageName, 'public');
-                $data['customer_image'] = $imagePath;
-            }
-
-            $testimonial->update($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Testimonial updated successfully',
-                'data' => $testimonial
-            ]);
-
         } catch (\Exception $e) {
+            Log::error('Error creating gallery image: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update testimonial',
-                'error' => $e->getMessage()
+                'message' => 'Failed to create gallery image: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * Remove the specified testimonial
-     */
-    public function destroy($id)
+    public function show($id)
     {
-        $testimonial = Testimonial::find($id);
-
-        if (!$testimonial) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Testimonial not found'
-            ], 404);
-        }
-
         try {
-            // Delete image if exists
-            if ($testimonial->customer_image && Storage::disk('public')->exists($testimonial->customer_image)) {
-                Storage::disk('public')->delete($testimonial->customer_image);
-            }
-
-            $testimonial->delete();
-
+            $image = GalleryImage::findOrFail($id);
             return response()->json([
                 'success' => true,
-                'message' => 'Testimonial deleted successfully'
+                'data' => $image
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete testimonial',
-                'error' => $e->getMessage()
+                'message' => 'Gallery image not found'
+            ], 404);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            $image = GalleryImage::findOrFail($id);
+
+            $validated = $request->validate([
+                'title' => 'sometimes|required|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'is_active' => 'sometimes|boolean'
+            ]);
+
+            $data = [];
+            
+            if ($request->has('title')) {
+                $data['title'] = $validated['title'];
+            }
+
+            if ($request->hasFile('image')) {
+                if ($image->image) {
+                    Storage::disk('public')->delete($image->image);
+                }
+                $data['image'] = $request->file('image')->store('gallery', 'public');
+            }
+
+            if ($request->has('is_active')) {
+                $data['is_active'] = $validated['is_active'];
+            }
+
+            $image->update($data);
+
+            return response()->json([
+                'success' => true,
+                'data' => $image,
+                'message' => 'Gallery image updated successfully'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating gallery image: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update gallery image'
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $image = GalleryImage::findOrFail($id);
+            
+            if ($image->image) {
+                Storage::disk('public')->delete($image->image);
+            }
+
+            $image->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Gallery image deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting gallery image: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete gallery image'
             ], 500);
         }
     }

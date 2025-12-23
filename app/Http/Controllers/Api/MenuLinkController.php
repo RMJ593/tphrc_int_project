@@ -185,4 +185,32 @@ class MenuLinkController extends Controller
             ], 500);
         }
     }
+    public function toggle(Request $request, $id)
+    {
+        $link = MenuLink::find($id);
+
+        if (!$link) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Menu link not found'
+            ], 404);
+        }
+
+        try {
+            $link->is_active = $request->input('is_active', !$link->is_active);
+            $link->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status updated successfully',
+                'data' => $link
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update status',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

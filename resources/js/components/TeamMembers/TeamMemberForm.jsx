@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import './TeamMembers.css';
@@ -9,13 +9,13 @@ function TeamMemberForm() {
     const isEditMode = !!id;
 
     const [formData, setFormData] = useState({
+        company_id: '',
         name: '',
-        position: '',
-        bio: '',
+        designation: '',
+        description: '',
         facebook: '',
         twitter: '',
-        instagram: '',
-        order: 0
+        instagram: ''
     });
 
     const [imageFile, setImageFile] = useState(null);
@@ -27,7 +27,7 @@ function TeamMemberForm() {
         if (isEditMode) {
             fetchMember();
         }
-    }, [id]);
+    }, [id, isEditMode]);
 
     const fetchMember = async () => {
         try {
@@ -35,13 +35,13 @@ function TeamMemberForm() {
             if (response.data.success) {
                 const member = response.data.data;
                 setFormData({
-                    name: member.name,
-                    position: member.position,
-                    bio: member.bio || '',
+                    company_id: member.company_id || '',
+                    name: member.name || '',
+                    designation: member.designation || '',
+                    description: member.description || '',
                     facebook: member.facebook || '',
                     twitter: member.twitter || '',
-                    instagram: member.instagram || '',
-                    order: member.order
+                    instagram: member.instagram || ''
                 });
                 if (member.image) {
                     setImagePreview(`/storage/${member.image}`);
@@ -76,13 +76,13 @@ function TeamMemberForm() {
 
         try {
             const formDataToSend = new FormData();
+            formDataToSend.append('company_id', formData.company_id);
             formDataToSend.append('name', formData.name);
-            formDataToSend.append('position', formData.position);
-            formDataToSend.append('bio', formData.bio);
+            formDataToSend.append('designation', formData.designation);
+            formDataToSend.append('description', formData.description);
             formDataToSend.append('facebook', formData.facebook);
             formDataToSend.append('twitter', formData.twitter);
             formDataToSend.append('instagram', formData.instagram);
-            formDataToSend.append('order', formData.order);
 
             if (imageFile) {
                 formDataToSend.append('image', imageFile);
@@ -124,7 +124,7 @@ function TeamMemberForm() {
             <div className="form-header">
                 <h1>{isEditMode ? 'Edit Team Member' : 'Create Team Member'}</h1>
                 <Link to="/staff/team-members" className="btn-back">
-                    ← Back to List
+                     Back to List
                 </Link>
             </div>
 
@@ -139,6 +139,22 @@ function TeamMemberForm() {
                     <h2>Basic Information</h2>
 
                     <div className="form-group">
+                        <label>Company Reg ID *</label>
+                        <input
+                            type="text"
+                            name="company_id"
+                            value={formData.company_id}
+                            onChange={handleChange}
+                            className="form-control"
+                            placeholder="e.g., EMP001"
+                            required
+                        />
+                        <small className="form-text">
+                            Unique company registration ID for this team member
+                        </small>
+                    </div>
+
+                    <div className="form-group">
                         <label>Name *</label>
                         <input
                             type="text"
@@ -151,11 +167,11 @@ function TeamMemberForm() {
                     </div>
 
                     <div className="form-group">
-                        <label>Position *</label>
+                        <label>Designation *</label>
                         <input
                             type="text"
-                            name="position"
-                            value={formData.position}
+                            name="designation"
+                            value={formData.designation}
                             onChange={handleChange}
                             className="form-control"
                             placeholder="e.g., Head Chef, Manager"
@@ -164,30 +180,16 @@ function TeamMemberForm() {
                     </div>
 
                     <div className="form-group">
-                        <label>Bio</label>
+                        <label>Small Description *</label>
                         <textarea
-                            name="bio"
-                            value={formData.bio}
+                            name="description"
+                            value={formData.description}
                             onChange={handleChange}
                             className="form-control"
                             rows="4"
-                            placeholder="Short biography..."
+                            placeholder="Brief description about the team member..."
+                            required
                         />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Display Order</label>
-                        <input
-                            type="number"
-                            name="order"
-                            value={formData.order}
-                            onChange={handleChange}
-                            className="form-control"
-                            min="0"
-                        />
-                        <small className="form-text">
-                            Lower numbers display first
-                        </small>
                     </div>
                 </div>
 
@@ -270,3 +272,4 @@ function TeamMemberForm() {
 }
 
 export default TeamMemberForm;
+

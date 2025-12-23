@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './UserResponses.css';
 
@@ -128,8 +128,8 @@ function UserResponseList() {
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Name ↑</th>
-                                <th>Type ↑</th>
+                                <th>Name </th>
+                                <th>Type </th>
                                 <th>Response Added</th>
                                 <th>Created</th>
                                 <th>Action</th>
@@ -162,14 +162,14 @@ function UserResponseList() {
                                                     className="action-btn view-btn"
                                                     title="View"
                                                 >
-                                                    👁️
+                                                    vvvbv
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(response.id)}
                                                     className="action-btn delete-btn"
                                                     title="Delete"
                                                 >
-                                                    🗑️
+                                                    fgfgg
                                                 </button>
                                             </div>
                                         </td>
@@ -198,7 +198,7 @@ function UserResponseList() {
                     <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Message Details</h3>
-                            <button onClick={() => setViewingResponse(null)} className="modal-close">×</button>
+                            <button onClick={() => setViewingResponse(null)} className="modal-close">hhj</button>
                         </div>
                         <div className="modal-body">
                             <div className="detail-row">
@@ -238,3 +238,4 @@ function UserResponseList() {
 }
 
 export default UserResponseList;
+

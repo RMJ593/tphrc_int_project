@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Testimonials.css';
@@ -7,8 +7,6 @@ function TestimonialList() {
     const [testimonials, setTestimonials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [entriesPerPage, setEntriesPerPage] = useState(10);
 
     useEffect(() => {
         fetchTestimonials();
@@ -44,27 +42,19 @@ function TestimonialList() {
         }
     };
 
-    const toggleFeatured = async (id, currentStatus) => {
+    const toggleActive = async (id, currentStatus) => {
         try {
             const response = await axios.put(`/api/testimonials/${id}`, {
-                is_featured: !currentStatus
+                is_active: !currentStatus
             });
 
             if (response.data.success) {
                 fetchTestimonials();
             }
         } catch (error) {
-            console.error('Error updating featured status:', error);
+            console.error('Error updating active status:', error);
         }
     };
-
-    const renderStars = (rating) => {
-        return '⭐'.repeat(rating) + '☆'.repeat(5 - rating);
-    };
-
-    const filteredTestimonials = testimonials.filter(testimonial =>
-        testimonial.customer_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     if (loading) {
         return <div className="testimonials-container"><div className="loading">Loading...</div></div>;
@@ -85,85 +75,43 @@ function TestimonialList() {
             <div className="table-card">
                 <div className="table-header-actions">
                     <Link to="/staff/testimonials/create" className="btn-new-green">
-                        + New
+                        + Add New
                     </Link>
                 </div>
 
-                <div className="table-controls">
-                    <div className="entries-control">
-                        <label>Show</label>
-                        <select value={entriesPerPage} onChange={(e) => setEntriesPerPage(Number(e.target.value))}>
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                        <span>entries</span>
-                    </div>
-
-                    <div className="search-control">
-                        <label>Search:</label>
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder=""
-                        />
-                    </div>
-                </div>
-
                 <div className="table-wrapper">
-                    <table className="data-table">
+                    <table className="data-table-simple">
                         <thead>
                             <tr>
-                                <th>Image</th>
-                                <th>Customer Name ↑</th>
-                                <th>Review</th>
-                                <th>Rating ↑</th>
-                                <th>Featured</th>
+                                <th>#</th>
+                                <th>Name</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTestimonials.length === 0 ? (
+                            {testimonials.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="empty-row">
+                                    <td colSpan="3" className="empty-row">
                                         No testimonials found
                                     </td>
                                 </tr>
                             ) : (
-                                filteredTestimonials.slice(0, entriesPerPage).map((testimonial) => (
+                                testimonials.map((testimonial, index) => (
                                     <tr key={testimonial.id}>
+                                        <td>{index + 1}</td>
                                         <td>
-                                            {testimonial.customer_image ? (
-                                                <img
-                                                    src={`/storage/${testimonial.customer_image}`}
-                                                    alt={testimonial.customer_name}
-                                                    className="table-image-small"
-                                                />
-                                            ) : (
-                                                <div className="no-image-placeholder">No Image</div>
-                                            )}
-                                        </td>
-                                        <td><strong>{testimonial.customer_name}</strong></td>
-                                        <td>
-                                            <div className="review-truncate">
-                                                {testimonial.review}
+                                            <div className="name-with-image">
+                                                {testimonial.customer_image ? (
+                                                    <img
+                                                        src={`/storage/${testimonial.customer_image}`}
+                                                        alt={testimonial.customer_name}
+                                                        className="table-image-small"
+                                                    />
+                                                ) : (
+                                                    <div className="no-image-placeholder">No Image</div>
+                                                )}
+                                                <strong>{testimonial.customer_name}</strong>
                                             </div>
-                                        </td>
-                                        <td>
-                                            <div className="star-rating">
-                                                {renderStars(testimonial.rating)}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <label className="toggle-switch-small">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={testimonial.is_featured}
-                                                    onChange={() => toggleFeatured(testimonial.id, testimonial.is_featured)}
-                                                />
-                                                <span className="toggle-slider-small"></span>
-                                            </label>
                                         </td>
                                         <td>
                                             <div className="action-buttons">
@@ -172,15 +120,23 @@ function TestimonialList() {
                                                     className="action-btn edit-btn"
                                                     title="Edit"
                                                 >
-                                                    ✏️
+                                                    hghgh
                                                 </Link>
                                                 <button
                                                     onClick={() => handleDelete(testimonial.id)}
                                                     className="action-btn delete-btn"
                                                     title="Delete"
                                                 >
-                                                    🗑️
+                                                    vhhgh
                                                 </button>
+                                                <label className="toggle-switch-small" title="Toggle Active Status">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={testimonial.is_active}
+                                                        onChange={() => toggleActive(testimonial.id, testimonial.is_active)}
+                                                    />
+                                                    <span className="toggle-slider-small"></span>
+                                                </label>
                                             </div>
                                         </td>
                                     </tr>
@@ -189,20 +145,10 @@ function TestimonialList() {
                         </tbody>
                     </table>
                 </div>
-
-                <div className="table-footer">
-                    <div className="showing-info">
-                        Showing {filteredTestimonials.length > 0 ? '1' : '0'} to {Math.min(entriesPerPage, filteredTestimonials.length)} of {filteredTestimonials.length} entries
-                    </div>
-                    <div className="pagination">
-                        <button className="page-btn" disabled>Previous</button>
-                        <button className="page-btn active">1</button>
-                        <button className="page-btn" disabled>Next</button>
-                    </div>
-                </div>
             </div>
         </div>
     );
 }
 
 export default TestimonialList;
+

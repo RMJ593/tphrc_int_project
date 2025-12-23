@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './TableBookings.css';
 
@@ -143,7 +143,7 @@ function TableBookingList() {
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Details ↑</th>
+                                <th>Details </th>
                                 <th>Booked For</th>
                                 <th>Booked On</th>
                                 <th>Last Response Added</th>
@@ -188,14 +188,14 @@ function TableBookingList() {
                                                     className="action-btn view-btn"
                                                     title="View"
                                                 >
-                                                    👁️
+                                                    hjhj
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(booking.id)}
                                                     className="action-btn delete-btn"
                                                     title="Delete"
                                                 >
-                                                    🗑️
+                                                    kjkjk
                                                 </button>
                                             </div>
                                         </td>
@@ -224,7 +224,7 @@ function TableBookingList() {
                     <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Booking Details</h3>
-                            <button onClick={() => setViewingBooking(null)} className="modal-close">×</button>
+                            <button onClick={() => setViewingBooking(null)} className="modal-close">jmm</button>
                         </div>
                         <div className="modal-body">
                             <div className="detail-row">
@@ -278,7 +278,7 @@ function TableBookingList() {
                                             setViewingBooking(null);
                                         }}
                                     >
-                                        ✓ Confirm
+                                         Confirm
                                     </button>
                                     <button 
                                         className="status-btn btn-completed"
@@ -287,7 +287,7 @@ function TableBookingList() {
                                             setViewingBooking(null);
                                         }}
                                     >
-                                        ✓ Complete
+                                         Complete
                                     </button>
                                     <button 
                                         className="status-btn btn-cancelled"
@@ -296,7 +296,7 @@ function TableBookingList() {
                                             setViewingBooking(null);
                                         }}
                                     >
-                                        × Cancel
+                                         Cancel
                                     </button>
                                 </div>
                             </div>
@@ -309,3 +309,4 @@ function TableBookingList() {
 }
 
 export default TableBookingList;
+

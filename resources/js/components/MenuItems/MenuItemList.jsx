@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Edit, Trash2 } from 'lucide-react';
@@ -98,17 +98,17 @@ function MenuItemList() {
                                         <div className="mt-1 flex gap-2">
                                             {item.is_vegetarian && (
                                                 <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
-                                                    🥬 Veg
+                                                     Veg
                                                 </span>
                                             )}
                                             {item.is_spicy && (
                                                 <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded">
-                                                    🌶️ Spicy
+                                                   Spicy
                                                 </span>
                                             )}
                                             {item.is_featured && (
                                                 <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">
-                                                    ⭐ Featured
+                                                     Featured
                                                 </span>
                                             )}
                                         </div>
@@ -160,3 +160,4 @@ function MenuItemList() {
 }
 
 export default MenuItemList;
+

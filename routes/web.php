@@ -2,12 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 
-// Redirect root to login
+// Customer routes - root and all customer pages
 Route::get('/', function () {
-    return redirect('/login');
+    return view('app');
 });
 
-// All routes should serve the React app
-Route::get('/{any}', function () {
+// Admin login route
+Route::get('/login', function () {
+    return view('app');
+});
+
+// Admin dashboard routes
+Route::get('/staff/{any?}', function () {
     return view('app');
 })->where('any', '.*');
+
+// API routes are already handled in api.php
